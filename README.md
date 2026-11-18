@@ -11,22 +11,22 @@ import SoroDB from "sorodb";
 
 const db = SoroDB({ store: "memory:///", path: "quick-start" });
 db.schema({ version: 1 }, [
-	{
-		table: "users",
-		columns: {
-			id: { type: "number", primary: true },
-			name: { type: "string" },
-		},
-	},
+  {
+    table: "users",
+    columns: {
+      id: { type: "number", primary: true },
+      name: { type: "string" },
+    },
+  },
 ]);
 
 try {
-	const users = await db.collection("users");
-	await users.create({ id: 1, name: "Ada" });
-	const page = await users.filter({ where: (w) => w.eq("name", "Ada") }).page();
-	console.log(page.items); // [{ id: 1, name: "Ada" }]
+  const users = await db.collection("users");
+  await users.create({ id: 1, name: "Ada" });
+  const page = await users.filter({ where: (w) => w.eq("name", "Ada") }).page();
+  console.log(page.items); // [{ id: 1, name: "Ada" }]
 } finally {
-	await db.close();
+  await db.close();
 }
 ```
 
@@ -42,30 +42,30 @@ Replace `your-bucket-name` with your bucket. The `store` URL selects the bucket;
 import SoroDB from "sorodb";
 
 const db = SoroDB({
-	store: "s3://your-bucket-name",
-	path: "sorodb-demo",
-	storeConfig: {
-		region: "your-bucket-region",
-		access_key_id: process.env.SORODB_ACCESS_KEY_ID,
-		secret_access_key: process.env.SORODB_SECRET_ACCESS_KEY,
-	},
+  store: "s3://your-bucket-name",
+  path: "sorodb-demo",
+  storeConfig: {
+    region: "your-bucket-region",
+    access_key_id: process.env.SORODB_ACCESS_KEY_ID,
+    secret_access_key: process.env.SORODB_SECRET_ACCESS_KEY,
+  },
 });
 db.schema({ version: 1 }, [
-	{
-		table: "users",
-		columns: {
-			id: { type: "number", primary: true },
-			name: { type: "string" },
-		},
-	},
+  {
+    table: "users",
+    columns: {
+      id: { type: "number", primary: true },
+      name: { type: "string" },
+    },
+  },
 ]);
 
 try {
-	const users = await db.collection("users");
-	if (!(await users.get(1))) await users.create({ id: 1, name: "Ada" });
-	console.log(await users.get(1)); // { id: 1, name: "Ada" }
+  const users = await db.collection("users");
+  if (!(await users.get(1))) await users.create({ id: 1, name: "Ada" });
+  console.log(await users.get(1)); // { id: 1, name: "Ada" }
 } finally {
-	await db.close();
+  await db.close();
 }
 ```
 
@@ -81,30 +81,30 @@ Replace `your-account-id` and `your-bucket-name` below. The `store` URL selects 
 import SoroDB from "sorodb";
 
 const db = SoroDB({
-	store: "https://your-account-id.r2.cloudflarestorage.com/your-bucket-name",
-	path: "sorodb-demo",
-	storeConfig: {
-		region: "auto",
-		access_key_id: process.env.SORODB_ACCESS_KEY_ID,
-		secret_access_key: process.env.SORODB_SECRET_ACCESS_KEY,
-	},
+  store: "https://your-account-id.r2.cloudflarestorage.com/your-bucket-name",
+  path: "sorodb-demo",
+  storeConfig: {
+    region: "auto",
+    access_key_id: process.env.SORODB_ACCESS_KEY_ID,
+    secret_access_key: process.env.SORODB_SECRET_ACCESS_KEY,
+  },
 });
 db.schema({ version: 1 }, [
-	{
-		table: "users",
-		columns: {
-			id: { type: "number", primary: true },
-			name: { type: "string" },
-		},
-	},
+  {
+    table: "users",
+    columns: {
+      id: { type: "number", primary: true },
+      name: { type: "string" },
+    },
+  },
 ]);
 
 try {
-	const users = await db.collection("users");
-	if (!(await users.get(1))) await users.create({ id: 1, name: "Ada" });
-	console.log(await users.get(1)); // { id: 1, name: "Ada" }
+  const users = await db.collection("users");
+  if (!(await users.get(1))) await users.create({ id: 1, name: "Ada" });
+  console.log(await users.get(1)); // { id: 1, name: "Ada" }
 } finally {
-	await db.close();
+  await db.close();
 }
 ```
 

@@ -7,27 +7,27 @@ import SoroDB from "sorodb";
 
 const db = SoroDB({ store: "memory:///", path: "transaction-guide" });
 db.schema({ version: 1 }, [
-	{ table: "users", columns: { id: { type: "number", primary: true }, name: { type: "string" } } },
-	{ table: "notes", columns: { id: { type: "string", primary: true }, text: { type: "string" } } },
+  { table: "users", columns: { id: { type: "number", primary: true }, name: { type: "string" } } },
+  { table: "notes", columns: { id: { type: "string", primary: true }, text: { type: "string" } } },
 ]);
 
 try {
-	await db.transaction(async (tx) => {
-		const users = await tx.collection("users");
-		const notes = await tx.collection("notes");
+  await db.transaction(async (tx) => {
+    const users = await tx.collection("users");
+    const notes = await tx.collection("notes");
 
-		await users.create({ id: 1, name: "Ada" });
-		await notes.create({ id: "welcome", text: "Hello, Ada" });
-	});
+    await users.create({ id: 1, name: "Ada" });
+    await notes.create({ id: "welcome", text: "Hello, Ada" });
+  });
 
-	await db.transaction(async (tx) => {
-		const users = await tx.collection("users");
-		for await (const user of users.filter({ where: (w) => w.eq("name", "Ada") })) {
-			console.log(user);
-		}
-	});
+  await db.transaction(async (tx) => {
+    const users = await tx.collection("users");
+    for await (const user of users.filter({ where: (w) => w.eq("name", "Ada") })) {
+      console.log(user);
+    }
+  });
 } finally {
-	await db.close();
+  await db.close();
 }
 ```
 

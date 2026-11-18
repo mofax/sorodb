@@ -6,16 +6,16 @@ Register a schema with `db.schema({ version }, definitions)` before using a coll
 
 ```js
 db.schema({ version: 1 }, [
-	{
-		table: "users",
-		columns: {
-			id: { type: "number", primary: true },
-			name: { type: "string" },
-			nickname: { type: "string?" },
-			joinedAt: { type: "date", default: () => new Date() },
-		},
-		indexes: [{ name: "joined_at", columns: [{ field: "joinedAt", direction: "desc" }] }],
-	},
+  {
+    table: "users",
+    columns: {
+      id: { type: "number", primary: true },
+      name: { type: "string" },
+      nickname: { type: "string?" },
+      joinedAt: { type: "date", default: () => new Date() },
+    },
+    indexes: [{ name: "joined_at", columns: [{ field: "joinedAt", direction: "desc" }] }],
+  },
 ]);
 ```
 
@@ -35,11 +35,11 @@ An index has a unique `name`, a nonempty `columns` array, optional `unique: true
 
 ```js
 indexes: [
-	{ name: "email", columns: ["email"], unique: true },
-	{
-		name: "recent_by_team",
-		columns: ["team", { field: "joinedAt", direction: "desc" }],
-	},
+  { name: "email", columns: ["email"], unique: true },
+  {
+    name: "recent_by_team",
+    columns: ["team", { field: "joinedAt", direction: "desc" }],
+  },
 ];
 ```
 
@@ -51,7 +51,7 @@ Pass `where` to `collection.filter`. It receives a builder and must return one e
 
 ```js
 const query = users.filter({
-	where: (w) => w.and(w.gte("age", 18), w.startsWith("name", "A")),
+  where: (w) => w.and(w.gte("age", 18), w.startsWith("name", "A")),
 });
 ```
 
@@ -73,13 +73,13 @@ This example assumes `users` has a `team` column and the `recent_by_team` index 
 
 ```js
 const page = await users
-	.filter({
-		where: (w) => w.eq("team", "platform"),
-		orderBy: (order) => order.asc("team").desc("joinedAt"),
-		select: ["name", "joinedAt"],
-		limit: 20,
-	})
-	.page();
+  .filter({
+    where: (w) => w.eq("team", "platform"),
+    orderBy: (order) => order.asc("team").desc("joinedAt"),
+    select: ["name", "joinedAt"],
+    limit: 20,
+  })
+  .page();
 ```
 
 `orderBy` requires an index whose leading fields and directions match the requested order. Ascending `id` works without a declared index. Fields in one order must be distinct. Without `orderBy`, do not rely on a particular result order.

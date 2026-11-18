@@ -9,51 +9,51 @@ import SoroDB, { ConflictError } from "sorodb";
 
 const db = SoroDB({ store: "memory:///", path: "index-guide" });
 db.schema({ version: 1 }, [
-	{
-		table: "users",
-		columns: {
-			id: { type: "number", primary: true },
-			name: { type: "string" },
-			email: { type: "string" },
-			joinedAt: { type: "date" },
-		},
-		indexes: [
-			{ name: "recent_users", columns: [{ field: "joinedAt", direction: "desc" }] },
-			{ name: "email_unique", columns: ["email"], unique: true },
-		],
-	},
+  {
+    table: "users",
+    columns: {
+      id: { type: "number", primary: true },
+      name: { type: "string" },
+      email: { type: "string" },
+      joinedAt: { type: "date" },
+    },
+    indexes: [
+      { name: "recent_users", columns: [{ field: "joinedAt", direction: "desc" }] },
+      { name: "email_unique", columns: ["email"], unique: true },
+    ],
+  },
 ]);
 
 try {
-	const users = await db.collection("users");
-	await users.create({
-		id: 1,
-		name: "Ada",
-		email: "ada@example.com",
-		joinedAt: new Date("2026-01-01"),
-	});
-	await users.create({
-		id: 2,
-		name: "Grace",
-		email: "grace@example.com",
-		joinedAt: new Date("2026-02-01"),
-	});
-	const newest = await users.filter({ orderBy: (order) => order.desc("joinedAt") }).page();
-	console.log(newest.items.map((user) => user.name)); // ["Grace", "Ada"]
+  const users = await db.collection("users");
+  await users.create({
+    id: 1,
+    name: "Ada",
+    email: "ada@example.com",
+    joinedAt: new Date("2026-01-01"),
+  });
+  await users.create({
+    id: 2,
+    name: "Grace",
+    email: "grace@example.com",
+    joinedAt: new Date("2026-02-01"),
+  });
+  const newest = await users.filter({ orderBy: (order) => order.desc("joinedAt") }).page();
+  console.log(newest.items.map((user) => user.name)); // ["Grace", "Ada"]
 
-	try {
-		await users.create({
-			id: 3,
-			name: "Another Ada",
-			email: "ada@example.com",
-			joinedAt: new Date(),
-		});
-	} catch (error) {
-		if (!(error instanceof ConflictError)) throw error;
-		console.log(error.code); // CONFLICT
-	}
+  try {
+    await users.create({
+      id: 3,
+      name: "Another Ada",
+      email: "ada@example.com",
+      joinedAt: new Date(),
+    });
+  } catch (error) {
+    if (!(error instanceof ConflictError)) throw error;
+    console.log(error.code); // CONFLICT
+  }
 } finally {
-	await db.close();
+  await db.close();
 }
 ```
 

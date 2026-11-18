@@ -7,36 +7,36 @@ import SoroDB from "sorodb";
 
 const db = SoroDB({ store: "memory:///", path: "pagination-guide" });
 db.schema({ version: 1 }, [
-	{
-		table: "users",
-		columns: {
-			id: { type: "number", primary: true },
-			team: { type: "string" },
-		},
-	},
+  {
+    table: "users",
+    columns: {
+      id: { type: "number", primary: true },
+      team: { type: "string" },
+    },
+  },
 ]);
 
 try {
-	const users = await db.collection("users");
-	for (let id = 1; id <= 3; id++) await users.create({ id, team: "platform" });
+  const users = await db.collection("users");
+  for (let id = 1; id <= 3; id++) await users.create({ id, team: "platform" });
 
-	const options = {
-		where: (w) => w.eq("team", "platform"),
-		orderBy: (order) => order.asc("id"),
-		limit: 2,
-	};
-	let cursor;
-	do {
-		const page = await users.filter({ ...options, cursor }).page();
-		for (const user of page.items) console.log(user);
-		cursor = page.nextCursor ?? undefined;
-	} while (cursor);
+  const options = {
+    where: (w) => w.eq("team", "platform"),
+    orderBy: (order) => order.asc("id"),
+    limit: 2,
+  };
+  let cursor;
+  do {
+    const page = await users.filter({ ...options, cursor }).page();
+    for (const user of page.items) console.log(user);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor);
 
-	const abandoned = users.filter({ limit: 1 });
-	const first = await abandoned.page();
-	if (first.nextCursor) abandoned.close();
+  const abandoned = users.filter({ limit: 1 });
+  const first = await abandoned.page();
+  if (first.nextCursor) abandoned.close();
 } finally {
-	await db.close();
+  await db.close();
 }
 ```
 

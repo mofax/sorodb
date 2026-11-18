@@ -84,9 +84,9 @@ All exported errors extend `SoroError` and have a `code` string. Some include `d
 
 ```js
 try {
-	await users.create({ id: 1, name: "Ada" });
+  await users.create({ id: 1, name: "Ada" });
 } catch (error) {
-	if (error instanceof ConflictError) console.error(error.code, error.message);
-	else throw error;
+  if (error instanceof ConflictError) console.error(error.code, error.message);
+  else throw error;
 }
 ```

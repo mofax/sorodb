@@ -18,40 +18,40 @@ import SoroDB from "sorodb";
 const directory = await mkdtemp(join(tmpdir(), "sorodb-upgrade-"));
 const config = { store: pathToFileURL(directory).href, path: "data" };
 try {
-	const first = SoroDB(config).schema({ version: 1 }, [
-		{
-			table: "items",
-			columns: {
-				id: { type: "number", primary: true },
-				label: { type: "string" },
-			},
-		},
-	]);
-	try {
-		await (await first.collection("items")).create({ id: 1, label: "one" });
-	} finally {
-		await first.close();
-	}
+  const first = SoroDB(config).schema({ version: 1 }, [
+    {
+      table: "items",
+      columns: {
+        id: { type: "number", primary: true },
+        label: { type: "string" },
+      },
+    },
+  ]);
+  try {
+    await (await first.collection("items")).create({ id: 1, label: "one" });
+  } finally {
+    await first.close();
+  }
 
-	const second = SoroDB(config).schema({ version: 2 }, [
-		{
-			table: "items",
-			columns: {
-				id: { type: "number", primary: true },
-				label: { type: "string" },
-				createdAt: { type: "date", default: () => new Date("2026-01-01") },
-			},
-			indexes: [{ name: "created_at", columns: ["createdAt"] }],
-		},
-	]);
-	try {
-		const items = await second.collection("items"); // opens and upgrades
-		console.log(await items.get(1));
-	} finally {
-		await second.close();
-	}
+  const second = SoroDB(config).schema({ version: 2 }, [
+    {
+      table: "items",
+      columns: {
+        id: { type: "number", primary: true },
+        label: { type: "string" },
+        createdAt: { type: "date", default: () => new Date("2026-01-01") },
+      },
+      indexes: [{ name: "created_at", columns: ["createdAt"] }],
+    },
+  ]);
+  try {
+    const items = await second.collection("items"); // opens and upgrades
+    console.log(await items.get(1));
+  } finally {
+    await second.close();
+  }
 } finally {
-	await rm(directory, { recursive: true, force: true });
+  await rm(directory, { recursive: true, force: true });
 }
 ```
 
