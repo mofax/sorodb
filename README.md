@@ -34,14 +34,22 @@ Register the schema before the first collection or transaction call. Always clos
 
 ## Store data in Amazon S3
 
-Create a bucket and give the application read and write access to it. Set `AWS_DEFAULT_REGION` to the bucket's region and provide credentials through the environment, such as `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` (plus `AWS_SESSION_TOKEN` for temporary credentials). The [S3 object-store configuration](https://docs.rs/object_store/latest/object_store/aws/struct.AmazonS3Builder.html#method.from_env) lists supported environment variables.
+Create a bucket and give the application read and write access to it. Pass its region and credentials explicitly through `storeConfig`; SoroDB forwards these provider-specific keys to SlateDB's `ObjectStoreBuilder`. Credentials can come from any source without setting process-wide `AWS_*` environment variables. For temporary credentials, also pass `token`. The [S3 object-store configuration](https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html) lists supported keys. Omitting `storeConfig` retains SlateDB's environment-based resolution.
 
 Replace `your-bucket-name` with your bucket. The `store` URL selects the bucket; `path` places this database under the `sorodb-demo` prefix in that bucket.
 
 ```js
 import SoroDB from "sorodb";
 
-const db = SoroDB({ store: "s3://your-bucket-name", path: "sorodb-demo" });
+const db = SoroDB({
+	store: "s3://your-bucket-name",
+	path: "sorodb-demo",
+	storeConfig: {
+		region: "your-bucket-region",
+		access_key_id: process.env.SORODB_ACCESS_KEY_ID,
+		secret_access_key: process.env.SORODB_SECRET_ACCESS_KEY,
+	},
+});
 db.schema({ version: 1 }, [
 	{
 		table: "users",
@@ -65,7 +73,7 @@ Run the program again with the same bucket, path, and schema to read the stored 
 
 ## Store data in Cloudflare R2
 
-This Node.js example uses R2's S3-compatible API. Create an R2 bucket and an API token with **Object Read & Write** access to that bucket. Set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to the token's R2 credentials, and set `AWS_DEFAULT_REGION=auto`. See [Cloudflare's R2 S3 guide](https://developers.cloudflare.com/r2/get-started/s3/) for the bucket, token, and account ID setup.
+This Node.js example uses R2's S3-compatible API. Create an R2 bucket and an API token with **Object Read & Write** access to that bucket. Pass its credentials explicitly with `region: "auto"`. See [Cloudflare's R2 S3 guide](https://developers.cloudflare.com/r2/get-started/s3/) for the bucket, token, and account ID setup.
 
 Replace `your-account-id` and `your-bucket-name` below. The `store` URL selects the R2 endpoint and bucket; `path` places the database under the `sorodb-demo` prefix in the bucket.
 
@@ -75,6 +83,11 @@ import SoroDB from "sorodb";
 const db = SoroDB({
 	store: "https://your-account-id.r2.cloudflarestorage.com/your-bucket-name",
 	path: "sorodb-demo",
+	storeConfig: {
+		region: "auto",
+		access_key_id: process.env.SORODB_ACCESS_KEY_ID,
+		secret_access_key: process.env.SORODB_SECRET_ACCESS_KEY,
+	},
 });
 db.schema({ version: 1 }, [
 	{
@@ -110,13 +123,14 @@ Run the program again with the same endpoint, bucket, path, and schema to read t
 
 ```sh
 bun install --frozen-lockfile
-node examples/basic.js
+cp -n .env.example .env # Keeps an existing .env; otherwise fill in R2 credentials.
+node --env-file=.env examples/basic.js
 bun run test
 bun run typecheck
 bun run build:types
 ```
 
-The [basic example](examples/basic.js) also demonstrates a descending index and async iteration.
+Run the [basic example](examples/basic.js) with Node's `--env-file=.env` option to load its database-specific `SORODB_*` variables. It passes credentials explicitly through `storeConfig`, without relying on global `AWS_*` variables, and demonstrates a descending index and async iteration. `.env` is git-ignored. Each run queries existing users and adds two new demo users.
 
 ## License
 

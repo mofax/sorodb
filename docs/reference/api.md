@@ -14,6 +14,8 @@ All database and collection operations that access storage are asynchronous. Cal
 
 Creates a database object. `config` requires a `store` URL string and a nonempty `path` string. Tested store forms are `memory:///` and a filesystem URL such as one produced by `pathToFileURL(directory).href`. For a file URL, SoroDB joins the URL's directory with `path`. Optional `cursorTtlMs` is a positive integer; its default is five minutes.
 
+Optional `storeConfig` is a record of provider-specific string keys and values, passed explicitly to SlateDB's `ObjectStoreBuilder` without seeding it from process environment variables. For S3 and R2, use `access_key_id`, `secret_access_key`, and `region` (plus `token` for temporary credentials). R2 uses `region: "auto"`. Values may come from a custom-named `.env` file, a secret manager, or application configuration. Omitting `storeConfig` preserves environment-based `ObjectStore.resolve` behavior. See the [R2 example](../../examples/basic.js).
+
 ### `db.schema({ version }, definitions)`
 
 Registers the schema and returns `db` for chaining. `version` is an integer of at least 1. `definitions` is a nonempty array of table definitions. Register it before opening the database. The database opens when a collection or transaction first needs storage. See [schema and query reference](schema-and-query.md) and [schema upgrades](../guides/schema-upgrades.md).

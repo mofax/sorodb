@@ -1,5 +1,5 @@
 // @ts-check
-import { DbBuilder, IsolationLevel, ObjectStore } from "@slatedb/uniffi";
+import { DbBuilder, IsolationLevel, ObjectStore, ObjectStoreBuilder } from "@slatedb/uniffi";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -100,7 +100,19 @@ export class Database {
 			storeUrl = "file:///";
 			databasePath = join(fileURLToPath(this.config.store), this.config.path);
 		}
-		this.store = ObjectStore.resolve(storeUrl);
+		if (this.config.storeConfig) {
+			const storeBuilder = ObjectStoreBuilder.from_url(storeUrl);
+			try {
+				for (const [key, value] of Object.entries(this.config.storeConfig)) {
+					storeBuilder.with_config(key, value);
+				}
+				this.store = storeBuilder.build();
+			} finally {
+				storeBuilder.dispose();
+			}
+		} else {
+			this.store = ObjectStore.resolve(storeUrl);
+		}
 		const builder = new DbBuilder(databasePath, this.store);
 		try {
 			this.native = await builder.build();

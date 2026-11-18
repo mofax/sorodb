@@ -6,13 +6,14 @@ Use Node.js 20 or later, Bun for the committed `bun.lock`, and npm for the packa
 
 ```sh
 bun install --frozen-lockfile
-node examples/basic.js
+cp -n .env.example .env # Keeps an existing .env; otherwise fill in R2 credentials.
+node --env-file=.env examples/basic.js
 bun run test
 bun run typecheck
 bun run build:types
 ```
 
-The example uses an in-memory store. File-backed tests create and remove temporary directories.
+The example uses an R2 bucket configured in the git-ignored `.env` file, loaded by Node's `--env-file` option. It writes demo users and can be rerun against the same database. Tests use memory stores or create and remove temporary filesystem directories; they do not need R2 credentials.
 
 ## Make a change
 

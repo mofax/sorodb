@@ -2,7 +2,7 @@
 
 /** @typedef {"asc" | "desc"} Direction */
 /** @typedef {Record<string, unknown> & { id: string | number }} Document */
-/** @typedef {{ store: string, path: string, cursorTtlMs?: number }} DatabaseConfig */
+/** @typedef {{ store: string, path: string, storeConfig?: Record<string, string>, cursorTtlMs?: number }} DatabaseConfig */
 /** @typedef {string | import("arktype").Type<unknown> | readonly ArkTypeValue[] | { [key: string]: ArkTypeValue }} ArkTypeDefinition */
 /** @typedef {ArkTypeDefinition | null | boolean | number | bigint | Date | Uint8Array} ArkTypeValue */
 /** @typedef {null | boolean | number | string | bigint | Date | Uint8Array | readonly DataValue[] | { [key: string]: DataValue }} DataValue */
