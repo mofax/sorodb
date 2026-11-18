@@ -26,17 +26,16 @@
 		"build:types": "tsc -p tsconfig.build.json && node scripts/finalize-types.js",
 		"prepack": "npm run build:types",
 		"pack:dry": "npm pack --dry-run",
-		"fmt": "oxfmt",
 		"lint": "oxlint"
 	},
 	"dependencies": {
-		"@slatedb/uniffi": "^0.16.0",
-		"@types/node": "^26.6.2",
-		"arktype": "^2.1.20",
-		"cbor2": "^2.3.0"
+		"@slatedb/uniffi": "^0.18.1",
+		"@types/node": "^26.6.6",
+		"arktype": "^2.2.10",
+		"cbor2": "^2.4.2"
 	},
 	"devDependencies": {
-		"oxlint": "^1.85.0",
+		"oxlint": "^1.94.0",
 		"typescript": "^7.0.2"
 	},
 	"engines": {
