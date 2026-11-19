@@ -1,6 +1,6 @@
 {
 	"name": "sorodb",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "Embedded document database built on SlateDB",
 	"license": "MIT",
 	"files": [
