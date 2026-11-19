@@ -1,137 +1,100 @@
 # SoroDB
 
-SoroDB is an embedded document database for Node.js, built on SlateDB. Define a schema, store JavaScript documents, and query them with indexes, transactions, and snapshot-backed pagination.
+**An embedded document database for Node.js, built on [SlateDB](https://slatedb.io/).**
 
-SoroDB is an ECMAScript module and requires Node.js 20 or later.
+Store and query JavaScript documents without running a separate database server.
 
-## Quick start
+SoroDB persists data in any s3 compatible object store. xx
+
+## Quickstart
+
+Use **Node.js 22 or later**.
+
+```sh
+npm install sorodb
+```
+
+Save this as `tasks.mjs`, then run `node tasks.mjs`. No credentials or services are needed.
 
 ```js
 import SoroDB from "sorodb";
 
-const db = SoroDB({ store: "memory:///", path: "quick-start" });
-db.schema({ version: 1 }, [
+const db = SoroDB({ store: "memory:///", path: "tasks-demo" }).schema({ version: 1 }, [
   {
-    table: "users",
+    table: "tasks",
     columns: {
       id: { type: "number", primary: true },
-      name: { type: "string" },
+      title: { type: "string" },
+      priority: { type: "number" },
+      done: { type: "boolean", default: false },
     },
+    indexes: [{ name: "by_priority", columns: [{ field: "priority", direction: "desc" }] }],
   },
 ]);
 
 try {
-  const users = await db.collection("users");
-  await users.create({ id: 1, name: "Ada" });
-  const page = await users.filter({ where: (w) => w.eq("name", "Ada") }).page();
-  console.log(page.items); // [{ id: 1, name: "Ada" }]
+  const tasks = await db.collection("tasks");
+  await tasks.create({ id: 1, title: "Write release notes", priority: 1 });
+  await tasks.create({ id: 2, title: "Fix checkout", priority: 3 });
+  await tasks.create({ id: 3, title: "Set up project", priority: 5, done: true });
+
+  const { items } = await tasks
+    .filter({
+      where: (w) => w.eq("done", false),
+      orderBy: (order) => order.desc("priority"),
+      select: ["title"],
+    })
+    .page();
+
+  console.log(items.map((task) => task.title));
+  // [ 'Fix checkout', 'Write release notes' ]
 } finally {
   await db.close();
 }
 ```
 
-Register the schema before the first collection or transaction call. Always close the database to release the underlying store and any active query snapshots.
+Register the schema before opening a collection or starting a transaction. `db.close()` releases the store and any open query snapshots; the in-memory data is discarded.
 
-## Store data in Amazon S3
+## Choose a storage backend
 
-Create a bucket and give the application read and write access to it. Pass its region and credentials explicitly through `storeConfig`; SoroDB forwards these provider-specific keys to SlateDB's `ObjectStoreBuilder`. Credentials can come from any source without setting process-wide `AWS_*` environment variables. For temporary credentials, also pass `token`. The [S3 object-store configuration](https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html) lists supported keys. Omitting `storeConfig` retains SlateDB's environment-based resolution.
+Pass `store` and `path` to `SoroDB()`. For persistent stores, reuse the same `store`, `path`, and schema to reopen the database.
 
-Replace `your-bucket-name` with your bucket. The `store` URL selects the bucket; `path` places this database under the `sorodb-demo` prefix in that bucket.
+| Backend          | `store`                                                  | `path`                             |
+| ---------------- | -------------------------------------------------------- | ---------------------------------- |
+| In memory        | `memory:///`                                             | A name for the disposable database |
+| Local filesystem | A directory URL from `pathToFileURL(directory).href`     | A database directory within it     |
+| Amazon S3        | `s3://your-bucket`                                       | A database prefix in the bucket    |
+| Cloudflare R2    | `https://<account-id>.r2.cloudflarestorage.com/<bucket>` | A database prefix in the bucket    |
 
-```js
-import SoroDB from "sorodb";
+For S3 or R2, give the application read and write access to the bucket. Add `storeConfig` with `region`, `access_key_id`, and `secret_access_key`; add `token` when using temporary credentials. Use the bucket's region for S3 and `"auto"` for R2. Pass values from your application configuration, or omit `storeConfig` to use SlateDB's environment-based resolution.
 
-const db = SoroDB({
-  store: "s3://your-bucket-name",
-  path: "sorodb-demo",
-  storeConfig: {
-    region: "your-bucket-region",
-    access_key_id: process.env.SORODB_ACCESS_KEY_ID,
-    secret_access_key: process.env.SORODB_SECRET_ACCESS_KEY,
-  },
-});
-db.schema({ version: 1 }, [
-  {
-    table: "users",
-    columns: {
-      id: { type: "number", primary: true },
-      name: { type: "string" },
-    },
-  },
-]);
+Follow the [local persistence tutorial](docs/getting-started.md) to write and reopen data on disk. For object storage, see [SlateDB's S3 guide](https://slatedb.io/docs/tutorials/s3/) or [Cloudflare's R2 setup guide](https://developers.cloudflare.com/r2/get-started/s3/).
 
-try {
-  const users = await db.collection("users");
-  if (!(await users.get(1))) await users.create({ id: 1, name: "Ada" });
-  console.log(await users.get(1)); // { id: 1, name: "Ada" }
-} finally {
-  await db.close();
-}
-```
+To run the [R2 example](examples/basic.js) from a checkout, set the variables listed in [`.env.example`](.env.example) in your own `.env`, then run `node --env-file=.env examples/basic.js`.
 
-Run the program again with the same bucket, path, and schema to read the stored document. See the [SlateDB object-store guide](https://slatedb.io/docs/get-started/quickstart/) for supported store URLs.
+## What to know before deploying
 
-## Store data in Cloudflare R2
-
-This Node.js example uses R2's S3-compatible API. Create an R2 bucket and an API token with **Object Read & Write** access to that bucket. Pass its credentials explicitly with `region: "auto"`. See [Cloudflare's R2 S3 guide](https://developers.cloudflare.com/r2/get-started/s3/) for the bucket, token, and account ID setup.
-
-Replace `your-account-id` and `your-bucket-name` below. The `store` URL selects the R2 endpoint and bucket; `path` places the database under the `sorodb-demo` prefix in the bucket.
-
-```js
-import SoroDB from "sorodb";
-
-const db = SoroDB({
-  store: "https://your-account-id.r2.cloudflarestorage.com/your-bucket-name",
-  path: "sorodb-demo",
-  storeConfig: {
-    region: "auto",
-    access_key_id: process.env.SORODB_ACCESS_KEY_ID,
-    secret_access_key: process.env.SORODB_SECRET_ACCESS_KEY,
-  },
-});
-db.schema({ version: 1 }, [
-  {
-    table: "users",
-    columns: {
-      id: { type: "number", primary: true },
-      name: { type: "string" },
-    },
-  },
-]);
-
-try {
-  const users = await db.collection("users");
-  if (!(await users.get(1))) await users.create({ id: 1, name: "Ada" });
-  console.log(await users.get(1)); // { id: 1, name: "Ada" }
-} finally {
-  await db.close();
-}
-```
-
-Run the program again with the same endpoint, bucket, path, and schema to read the stored document. For a bucket in a specific R2 jurisdiction, use its [jurisdiction-specific endpoint](https://developers.cloudflare.com/r2/api/tokens/).
+- **One writer per database.** SlateDB is [designed for a single writer](https://slatedb.io/docs/get-started/introduction/). Don't open the same persistent database for writes from multiple app instances at once.
+- **Sorting needs an index.** Except for ascending `id`, `orderBy` must match the leading fields and directions of a declared index. Filters without a usable index can scan documents.
+- **Cursors belong to the open database.** Pages share a snapshot, but a cursor can't be resumed after the database is closed or the cursor expires.
+- **Schema upgrades are additive.** Bump the schema version to add collections, fields, or indexes. Removing or changing existing definitions is not supported by the upgrade API.
 
 ## Documentation
 
-- [Getting started](docs/getting-started.md): build a file-backed database and reopen it.
-- [API reference](docs/reference/api.md): database, collection, query, and error APIs.
-- [Schema and query reference](docs/reference/schema-and-query.md): types, indexes, filters, and ordering.
-- Guides: [schema upgrades](docs/guides/schema-upgrades.md), [indexes and sorting](docs/guides/indexes-and-sorting.md), [transactions](docs/guides/transactions.md), and [pagination](docs/guides/pagination.md).
-- [Architecture](docs/explanation/architecture.md): how documents, indexes, and snapshots fit together.
-- [Contributing](CONTRIBUTING.md): setup and checks for repository changes.
+| I want to…                                                  | Read                                                             |
+| ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| Look up collection, query, or error APIs                    | [API reference](docs/reference/api.md)                           |
+| Define fields, defaults, filters, and projections           | [Schema and query reference](docs/reference/schema-and-query.md) |
+| Sort results or enforce uniqueness                          | [Indexes and sorting](docs/guides/indexes-and-sorting.md)        |
+| Commit or roll back writes across collections together      | [Transactions](docs/guides/transactions.md)                      |
+| Stream results or resume a page                             | [Pagination](docs/guides/pagination.md)                          |
+| Add fields and backfill existing documents                  | [Schema upgrades](docs/guides/schema-upgrades.md)                |
+| Understand how documents, indexes, and snapshots are stored | [Architecture](docs/explanation/architecture.md)                 |
 
-## Run this repository
+## Contributing
 
-```sh
-bun install --frozen-lockfile
-cp -n .env.example .env # Keeps an existing .env; otherwise fill in R2 credentials.
-node --env-file=.env examples/basic.js
-bun run test
-bun run typecheck
-bun run build:types
-```
-
-Run the [basic example](examples/basic.js) with Node's `--env-file=.env` option to load its database-specific `SORODB_*` variables. It passes credentials explicitly through `storeConfig`, without relying on global `AWS_*` variables, and demonstrates a descending index and async iteration. `.env` is git-ignored. Each run queries existing users and adds two new demo users.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for checkout setup and development checks. Report bugs or request features in [GitHub Issues](https://github.com/mofax/sorodb/issues).
 
 ## License
 
-SoroDB is licensed under the [MIT License](LICENSE).
+[MIT](LICENSE)
