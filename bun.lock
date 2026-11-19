@@ -8,7 +8,7 @@
         "@slatedb/uniffi": "^0.18.1",
         "@types/node": "^26.6.6",
         "arktype": "^2.2.10",
-        "cbor2": "^2.4.2",
+        "cbor-ts": "^0.0.5",
       },
       "devDependencies": {
         "oxlint": "^1.94.0",
@@ -20,8 +20,6 @@
     "@ark/schema": ["@ark/schema@0.56.9", "", { "dependencies": { "@ark/util": "0.56.9" } }, "sha512-3kFUweE9PagqzEC9FEOirBRrVxBj0D6o8UiZDDrCyrcaBepRFHjUezf6MuTk8mKfJ4NKzSsaUCOVK+jzcm+dPw=="],
 
     "@ark/util": ["@ark/util@0.56.9", "", {}, "sha512-/yA1me+AMmI75VaQ5owz1A1owopAJ0ZZFXy9SI1Q69kErJfxuglQBYjGeOTFyygJjZ9Rf4UjCtD5XTuEiNiGHw=="],
-
-    "@cto.af/wtf8": ["@cto.af/wtf8@1.0.1", "", {}, "sha512-kl6pH/D6SOCqArCVBcx7E45urbzBAPNr4xkMMaRAjrFSeI3y/s2+x78x5H0/UNr6F4GCgdxooTutPCNRymVzMg=="],
 
     "@oxlint/binding-android-arm-eabi": ["@oxlint/binding-android-arm-eabi@1.94.0", "", { "os": "android", "cpu": "arm" }, "sha512-730FKSBsKg/NawYnpI3gXRroXptOVqY32iYBPLUZaSx0vgYzOeiNtwojZL4gJdzo9wDvHUlstShmGRHrWcbRYg=="],
 
@@ -109,7 +107,7 @@
 
     "arktype": ["arktype@2.2.10", "", { "dependencies": { "@ark/schema": "0.56.9", "@ark/util": "0.56.9", "arkregex": "0.0.15" } }, "sha512-xfum3++1RGjULFBeeXph3XrejEhAfswZlpH/V5m324j8aZ/53tHUd8OPCXE1v5iU/2UEkn/ZDFUT0Exkjv96xA=="],
 
-    "cbor2": ["cbor2@2.4.2", "", { "dependencies": { "@cto.af/wtf8": "1.0.1" } }, "sha512-fuz4FXnURAEvtFA8rS+3R85eSZAKZRL4vI9AU6eokOE1TghPsp7WZSh+VvB/3ltKaWZreWtjR/kahn/ogmsgsQ=="],
+    "cbor-ts": ["cbor-ts@0.0.5", "", {}, "sha512-F8RPHd0L7OLJAHiCvxmVGLDXzyCE2j1/TM38FSINf7tNbTnGhbRZYU1dV72nE7YsgtSJeo0a4w6Z2s1Vi2An8w=="],
 
     "koffi": ["koffi@2.16.4", "", { "hasInstallScript": true }, "sha512-EE31wJCADvsUntlzrbWvSh9Eii6hRJRWYSREWqWnKT+f3j0PWt7cFp7Gzb6FKtEk/yBIJu/HxfzfDl+FcDp1Sg=="],
 

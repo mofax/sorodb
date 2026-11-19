@@ -1,6 +1,6 @@
 # Getting started
 
-This tutorial creates a file-backed SoroDB database, writes documents, queries them, and reopens the data. You need Node.js 20 or later. Run `bun install --frozen-lockfile` in this checkout and save `app.mjs` at the repository root. Once SoroDB is published to npm, you can instead install it in another ESM project with `npm install sorodb`.
+This tutorial creates a file-backed SoroDB database, writes documents, queries them, and reopens the data. You need Node.js 24 or later. Run `bun install --frozen-lockfile` in this checkout and save `app.mjs` at the repository root. Once SoroDB is published to npm, you can instead install it in another ESM project with `npm install sorodb`.
 
 ## 1. Create a store and schema
 

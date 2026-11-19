@@ -2,7 +2,7 @@
 
 ## Set up a checkout
 
-Use Node.js 20 or later, Bun for the committed `bun.lock`, and npm for the package preview command.
+Use Node.js 24 or later, Bun for the committed `bun.lock`, and npm for the package preview command.
 
 ```sh
 bun install --frozen-lockfile

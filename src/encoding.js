@@ -1,5 +1,5 @@
 // @ts-check
-import { decode, encode } from "cbor2";
+import { CBOR } from "cbor-ts";
 import { ValidationError } from "./errors.js";
 
 /** @param {string} value */
@@ -110,27 +110,38 @@ export function range(prefix, after) {
 	};
 }
 
-const cborOptions = { collapseBigInts: false, dateTag: 0 };
+/** @typedef {import("cbor-ts").CBORIO} CBORValue */
 
-/** @param {unknown} value @param {boolean} [allowUndefined] @param {boolean} [normalizeNumbers] */
-function checked(value, allowUndefined = false, normalizeNumbers = false) {
+/** @param {unknown} value @param {boolean} deterministic */
+function packData(value, deterministic) {
 	const seen = new Set();
-	/** @param {any} item @returns {any} */
+	let needsFloatFallback = false;
+	/** @param {any} item @returns {CBORValue} */
 	function visit(item) {
-		if (item === undefined && allowUndefined) {
+		if (item === undefined && deterministic) {
 			return item;
 		}
-		if (
-			item === null ||
-			typeof item === "string" ||
-			typeof item === "boolean" ||
-			typeof item === "bigint"
-		) {
+		if (item === null || typeof item === "string" || typeof item === "boolean") {
 			return item;
+		}
+		if (typeof item === "bigint") {
+			// Keep BigInts distinct from numbers, including values that fit in a CBOR integer.
+			let tag = 2;
+			let magnitude = item;
+			if (item < 0n) {
+				tag = 3;
+				magnitude = -1n - item;
+			}
+			const hex = magnitude.toString(16);
+			return CBOR.tag(tag, Buffer.from(hex.padStart(hex.length + (hex.length % 2), "0"), "hex"));
 		}
 		if (typeof item === "number" && Number.isFinite(item)) {
-			if (normalizeNumbers && Object.is(item, -0)) {
+			if (deterministic && Object.is(item, -0)) {
 				return 0;
+			}
+			if (!Number.isSafeInteger(item) || Object.is(item, -0)) {
+				needsFloatFallback ||=
+					Number.isInteger(item) || (!deterministic && Math.fround(item) === item);
 			}
 			return item;
 		}
@@ -138,7 +149,8 @@ function checked(value, allowUndefined = false, normalizeNumbers = false) {
 			if (Number.isNaN(item.getTime())) {
 				throw new ValidationError("Invalid Date cannot be stored");
 			}
-			return item;
+			// Preserve the original wire representation and exact millisecond precision.
+			return CBOR.tag(0, item.toISOString().replace(/\.000Z$/, "Z"));
 		}
 		if (item instanceof Uint8Array) {
 			if (item.constructor === Uint8Array) {
@@ -169,7 +181,7 @@ function checked(value, allowUndefined = false, normalizeNumbers = false) {
 			) {
 				throw new ValidationError("Documents must contain plain objects");
 			}
-			result = /** @type {Record<string, any>} */ (Object.create(null));
+			result = /** @type {Record<string, CBORValue>} */ (Object.create(null));
 			for (const [key, child] of Object.entries(item)) {
 				result[key] = visit(child);
 			}
@@ -177,24 +189,74 @@ function checked(value, allowUndefined = false, normalizeNumbers = false) {
 		seen.delete(item);
 		return result;
 	}
-	return visit(value);
+	const checked = visit(value);
+	if (needsFloatFallback) {
+		return packWithPreferredFloats(checked, deterministic);
+	}
+	return Buffer.from(CBOR.pack(checked, { deterministic }));
+}
+
+/**
+ * Keep the original float widths for persisted schema defaults and stable keys.
+ * cbor-ts only uses preferred float widths in deterministic mode (which also sorts maps),
+ * and it cannot encode unsafe integer-valued numbers directly.
+ * @param {CBORValue} value @param {boolean} deterministic
+ */
+function packWithPreferredFloats(value, deterministic) {
+	/** @type {Uint8Array[]} */
+	const chunks = [];
+	/** @param {CBORValue} item */
+	function append(item) {
+		if (Array.isArray(item)) {
+			const header = CBOR.pack(item.length);
+			header[0] |= 0x80;
+			chunks.push(header);
+			item.forEach(append);
+		} else if (item && typeof item === "object" && Object.getPrototypeOf(item) === null) {
+			const entries = Object.entries(/** @type {Record<string, CBORValue>} */ (item)).map(
+				([key, child]) => ({ key: CBOR.pack(key), child }),
+			);
+			if (deterministic) {
+				entries.sort((a, b) => Buffer.compare(a.key, b.key));
+			}
+			const header = CBOR.pack(entries.length);
+			header[0] |= 0xa0;
+			chunks.push(header);
+			for (const { key, child } of entries) {
+				chunks.push(key);
+				append(child);
+			}
+		} else if (typeof item === "number" && Number.isInteger(item) && !Number.isSafeInteger(item)) {
+			if (Math.fround(item) === item) {
+				const bytes = Buffer.alloc(5);
+				bytes[0] = 0xfa;
+				bytes.writeFloatBE(item, 1);
+				chunks.push(bytes);
+			} else {
+				const bytes = Buffer.alloc(9);
+				bytes[0] = 0xfb;
+				bytes.writeDoubleBE(item, 1);
+				chunks.push(bytes);
+			}
+		} else {
+			chunks.push(CBOR.pack(item, { deterministic: true }));
+		}
+	}
+	append(value);
+	return Buffer.concat(chunks);
 }
 
 /** @param {unknown} value */
 export function encodeData(value) {
-	return Buffer.from(encode(checked(value), cborOptions));
+	return packData(value, false);
 }
 
 /** @param {Uint8Array} bytes @returns {any} */
 export function decodeData(bytes) {
-	return decode(new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength), {
-		collapseBigInts: false,
-	});
+	return CBOR.unpack(bytes);
 }
 
 /** @param {unknown} value */
 export function stable(value) {
-	return Buffer.from(encode(checked(value, true, true), { ...cborOptions, cde: true })).toString(
-		"hex",
-	);
+	return packData(value, true).toString("hex");
 }
